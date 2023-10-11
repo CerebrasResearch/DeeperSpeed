@@ -883,6 +883,17 @@ def get_global_norm_of_tensors(input_tensors, norm_type=2, mpu=None):
 
     return total_norm
 
+# BEGIN: SIYUN
+def get_norms_of_tensors(input_tensors, norm_type=2, mpu=None):
+    norm_type = float(norm_type)
+    norm = [t.data.float().norm(norm_type).item()**norm_type for t in input_tensors]
+    norm_cuda = get_accelerator().FloatTensor(norm)
+    if mpu is not None:
+        dist.all_reduce(norm_cuda, op=dist.ReduceOp.SUM, group=mpu.get_model_parallel_group())
+#    print(norm_cuda)
+    norm = norm_cuda**(1. / norm_type)
+    return norm
+# END: SIYUN
 
 def clip_tensors_by_global_norm(input_tensors, max_norm=1.0, global_norm=None, mpu=None, eps=1e-6):
     """Clip list of tensors by global norm.

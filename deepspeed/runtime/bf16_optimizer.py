@@ -14,6 +14,9 @@ from deepspeed.runtime import ZeROOptimizer
 from packaging import version as pkg_version
 
 from deepspeed.git_version_info import version
+# BEGIN: SIYUN
+from deepspeed.runtime.utils import get_norms_of_tensors
+# END: SIYUN
 from deepspeed.runtime.utils import (get_global_norm_of_tensors, clip_tensors_by_global_norm, DummyOptim,
                                      align_dense_tensors, all_gather_dp_groups, bwc_tensor_model_parallel_rank,
                                      is_model_parallel_parameter, see_memory_usage)
@@ -235,6 +238,11 @@ class BF16_Optimizer(ZeROOptimizer):
     def step(self, closure=None):
         if closure is not None:
             raise NotImplementedError(f'{self.__class__} does not support closure.')
+
+        # BEGIN: SIYUN
+        # self.stored_gradients = [torch.norm(p.detach()) for p in self.get_grads_for_norm()]
+        self.stored_gradients = get_norms_of_tensors(input_tensors=self.get_grads_for_norm(), mpu=self.mpu, norm_type=self.norm_type)
+        # END: SIYUN
 
         all_groups_norm = get_global_norm_of_tensors(input_tensors=self.get_grads_for_norm(),
                                                      mpu=self.mpu,

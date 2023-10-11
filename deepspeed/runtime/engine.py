@@ -226,6 +226,10 @@ class DeepSpeedEngine(Module):
         self.moe_layers = []
         self._step_applied = False
         self._global_grad_norm = None
+        # BEGIN: SIYUN
+        self.store_gradients = False
+        self.stored_gradients = None
+        # END: SIYUN
         self.use_ds_comm = False  # False --> Use torch.dist, True --> Use ds.comm backend.
 
         self.checkpoint_engine = None
@@ -1953,6 +1957,11 @@ class DeepSpeedEngine(Module):
                 # https://nvidia.github.io/apex/advanced.html#gradient-clipping
                 master_params = amp.master_params(self.optimizer)
                 clip_grad_norm_(parameters=master_params, max_norm=self.gradient_clipping(), mpu=self.mpu)
+        # BEGIN: SIYUN
+        if self.store_gradients:
+            self.stored_gradients = self.optimizer.stored_gradients
+        # END: SIYUN
+
         self.optimizer.step()
 
         if hasattr(self.optimizer, '_global_grad_norm'):
